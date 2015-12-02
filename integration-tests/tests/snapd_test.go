@@ -91,6 +91,8 @@ type apiInteraction struct {
 	// until the waitPattern is received or a timeout expires
 	waitPattern  string
 	waitFunction func() (string, error)
+	// indicates if the interaction should be performed by a regular user
+	regularUser bool
 }
 
 type apiInteractions []apiInteraction
@@ -124,6 +126,7 @@ type apiDeleteExerciser interface {
 // options passed to the request method
 type requestOptions struct {
 	resource, verb, payload string
+	regularUser             bool
 }
 
 // this is the entry point for all the api tests
@@ -142,18 +145,21 @@ func exerciseAPI(c *check.C, a apiExerciser) {
 		doInteractions(c, resource, "POST", postInstance.postInteractions())
 	} else {
 		doMethodNotAllowed(c, resource, "POST")
+		doNotAuthorized(c, resource, "POST")
 	}
 
 	if putInstance, ok := a.(apiPutExerciser); ok {
 		doInteractions(c, resource, "PUT", putInstance.putInteractions())
 	} else {
 		doMethodNotAllowed(c, resource, "PUT")
+		doNotAuthorized(c, resource, "POST")
 	}
 
 	if deleteInstance, ok := a.(apiDeleteExerciser); ok {
 		doInteractions(c, resource, "DELETE", deleteInstance.deleteInteractions())
 	} else {
 		doMethodNotAllowed(c, resource, "DELETE")
+		doNotAuthorized(c, resource, "POST")
 	}
 }
 
@@ -169,7 +175,11 @@ func doInteractions(c *check.C, resource, verb string, interactions apiInteracti
 func doInteraction(c *check.C, resource, verb string, interaction apiInteraction) {
 	log.Printf("** Trying interaction %v", interaction)
 
-	body, err := genericRequest(&requestOptions{resource: resource, verb: verb, payload: interaction.payload})
+	body, err := genericRequest(&requestOptions{
+		resource:    resource,
+		verb:        verb,
+		payload:     interaction.payload,
+		regularUser: interaction.regularUser})
 	c.Assert(err, check.IsNil, check.Commentf("Error making the request: %s", err))
 
 	if interaction.responseObject == nil {
@@ -203,6 +213,15 @@ func doMethodNotAllowed(c *check.C, resource, verb string) {
 			responsePattern: `{"result":{},"status":"Method Not Allowed","status_code":405,"type":"error"}`})
 }
 
+func doNotAuthorized(c *check.C, resource, verb string) {
+	doInteraction(c,
+		resource,
+		verb,
+		apiInteraction{
+			responsePattern: `{"result":{},"status":"Not Authorized","status_code":401,"type":"error"}`,
+			regularUser:     true})
+}
+
 // this is the function which makes requests to the api
 func genericRequest(options *requestOptions) (body []byte, err error) {
 	cmd := []string{"sudo", "http.do",
@@ -220,6 +239,11 @@ func genericRequest(options *requestOptions) (body []byte, err error) {
 			defer os.Remove(payload[1:])
 		}
 		cmd = append(cmd, payload)
+	}
+
+	// remove sudo for regular users
+	if options.regularUser {
+		cmd = cmd[1:]
 	}
 
 	bodyString, err := cli.ExecCommandErr(append(cmd, "X-Allow-Unsigned:1")...)
