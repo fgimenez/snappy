@@ -23,6 +23,7 @@ package tests
 import (
 	"io/ioutil"
 	"path"
+	"time"
 
 	"github.com/ubuntu-core/snappy/integration-tests/testutils/common"
 	"github.com/ubuntu-core/snappy/integration-tests/testutils/partition"
@@ -64,6 +65,7 @@ func (s *updateSuite) assertBootDirContents(c *check.C) {
 // be up-to-date after running this test.
 func (s *updateSuite) TestUpdateToSameReleaseAndChannel(c *check.C) {
 	if common.BeforeReboot() {
+		time.Sleep(2 * time.Second)
 		updateOutput := common.CallFakeUpdate(c)
 		expected := "(?ms)" +
 			".*" +
