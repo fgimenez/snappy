@@ -44,7 +44,9 @@ type AssertionType struct {
 
 // Understood assertion types.
 var (
-	AccountKeyType   = &AssertionType{"account-key", []string{"account-id", "public-key-id"}, assembleAccountKey}
+	AccountKeyType = &AssertionType{"account-key", []string{"account-id", "public-key-id"}, assembleAccountKey}
+	// XXX: is series actually part of the primary key?
+	ModelType        = &AssertionType{"model", []string{"brand-id", "model", "series"}, assembleModel}
 	SnapBuildType    = &AssertionType{"snap-build", []string{"snap-id", "snap-digest"}, assembleSnapBuild}
 	SnapRevisionType = &AssertionType{"snap-revision", []string{"snap-id", "snap-digest"}, assembleSnapRevision}
 
@@ -53,6 +55,7 @@ var (
 
 var typeRegistry = map[string]*AssertionType{
 	AccountKeyType.Name:   AccountKeyType,
+	ModelType.Name:        ModelType,
 	SnapBuildType.Name:    SnapBuildType,
 	SnapRevisionType.Name: SnapRevisionType,
 }
@@ -433,6 +436,12 @@ func Assemble(headers map[string]string, body, content, signature []byte) (Asser
 	assertType := Type(typ)
 	if assertType == nil {
 		return nil, fmt.Errorf("unknown assertion type: %q", typ)
+	}
+
+	for _, primKey := range assertType.PrimaryKey {
+		if _, err := checkMandatory(headers, primKey); err != nil {
+			return nil, fmt.Errorf("assertion %s: %v", assertType.Name, err)
+		}
 	}
 
 	revision, err := checkRevision(headers)

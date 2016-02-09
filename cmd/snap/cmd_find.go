@@ -21,19 +21,17 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"text/tabwriter"
 
 	"github.com/ubuntu-core/snappy/client"
 	"github.com/ubuntu-core/snappy/i18n"
-	"github.com/ubuntu-core/snappy/logger"
 )
 
-var (
-	shortFindHelp = i18n.G("Find packages to install")
-	longFindHelp  = i18n.G("Query the store for available packages")
-)
+var shortFindHelp = i18n.G("Finds packages to install")
+var longFindHelp = i18n.G(`
+The find command queries the store for available packages.
+`)
 
 type cmdFind struct {
 	Positional struct {
@@ -42,14 +40,13 @@ type cmdFind struct {
 }
 
 func init() {
-	_, err := parser.AddCommand("find", shortFindHelp, longFindHelp, &cmdFind{})
-	if err != nil {
-		logger.Panicf("unable to add find command: %v", err)
-	}
+	addCommand("find", shortFindHelp, longFindHelp, func() interface{} {
+		return &cmdFind{}
+	})
 }
 
 func (x *cmdFind) Execute([]string) error {
-	cli := client.New()
+	cli := Client()
 	filter := client.SnapFilter{
 		Query:   x.Positional.Query,
 		Sources: []string{"store"},
@@ -75,7 +72,7 @@ func (x *cmdFind) Execute([]string) error {
 	}
 	sort.Strings(names)
 
-	w := tabwriter.NewWriter(os.Stdout, 5, 3, 1, ' ', 0)
+	w := tabwriter.NewWriter(Stdout, 5, 3, 1, ' ', 0)
 	defer w.Flush()
 
 	fmt.Fprintln(w, i18n.G("Name\tVersion\tSummary"))

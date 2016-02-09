@@ -1,8 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
-// +build !excludeintegration
 
 /*
- * Copyright (C) 2015 Canonical Ltd
+ * Copyright (C) 2016 Canonical Ltd
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -18,29 +17,18 @@
  *
  */
 
-package tests
+package main
 
 import (
-	"github.com/ubuntu-core/snappy/integration-tests/testutils/cli"
-	"github.com/ubuntu-core/snappy/integration-tests/testutils/common"
-
-	"gopkg.in/check.v1"
+	"github.com/ubuntu-core/snappy/i18n"
 )
 
-var _ = check.Suite(&searchSuite{})
+type cmdExperimental struct{}
 
-type searchSuite struct {
-	common.SnappySuite
-}
+var shortExperimentalHelp = i18n.G("Runs unsupported experimental commands")
+var longExperimentalHelp = i18n.G(`
+The experimental command contains a selection of additional sub-commands.
 
-func (s *searchSuite) TestSearchFrameworkMustPrintMatch(c *check.C) {
-	searchOutput := cli.ExecCommand(c, "snap", "find", "hello-dbus-fwk")
-
-	expected := "(?ms)" +
-		"Name +Version +Summary *\n" +
-		".*" +
-		"^hello-dbus-fwk.canonical +.* +hello-dbus-fwk *\n" +
-		".*"
-
-	c.Assert(searchOutput, check.Matches, expected)
-}
+Experimental commands can be removed without notice and may not work on
+non-development systems.
+`)

@@ -188,7 +188,7 @@ func sysInfo(c *Command, r *http.Request) Response {
 
 type metarepo interface {
 	Details(string, string) ([]snappy.Part, error)
-	Find(string) ([]snappy.Part, error) // XXX: change this to Search iff aliases (and thus SharedNames) are no more
+	Find(string) ([]snappy.Part, error)
 }
 
 var newRemoteRepo = func() metarepo {
@@ -541,6 +541,14 @@ func snapService(c *Command, r *http.Request) Response {
 	}).Map(route))
 }
 
+type configurator interface {
+	Configure(*snappy.SnapPart, []byte) (string, error)
+}
+
+var getConfigurator = func() configurator {
+	return &snappy.Overlord{}
+}
+
 func snapConfig(c *Command, r *http.Request) Response {
 	vars := muxVars(r)
 	name := vars["name"]
@@ -576,17 +584,13 @@ func snapConfig(c *Command, r *http.Request) Response {
 		return BadRequest("reading config request body gave %v", err)
 	}
 
-	config, err := part.Config(bs)
+	overlord := getConfigurator()
+	config, err := overlord.Configure(part.(*snappy.SnapPart), bs)
 	if err != nil {
 		return InternalError("unable to retrieve config for %s: %v", pkgName, err)
 	}
 
 	return SyncResponse(config)
-}
-
-type configSubtask struct {
-	Status string      `json:"status"`
-	Output interface{} `json:"output"`
 }
 
 func getOpInfo(c *Command, r *http.Request) Response {
@@ -712,7 +716,6 @@ func (inst *snapInstruction) deactivate() interface{} {
 func (inst *snapInstruction) dispatch() func() interface{} {
 	switch inst.Action {
 	case "install":
-		// TODO: licenses
 		return inst.install
 	case "update":
 		return inst.update

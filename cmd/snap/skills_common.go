@@ -21,37 +21,32 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
-
-	"github.com/ubuntu-core/snappy/i18n"
+	"strings"
 )
 
-type cmdListCaps struct {
+// AttributePair contains a pair of key-value strings
+type AttributePair struct {
+	// The key
+	Key string
+	// The value
+	Value string
 }
 
-var shortListCapsHelp = i18n.G("Lists system capabilities")
-var longListCapsHelp = i18n.G(`
-The list-caps command shows all capabilities and their allocation.
-`)
-
-func init() {
-	addCommand("list-caps", shortListCapsHelp, longListCapsHelp, func() interface{} {
-		return &cmdListCaps{}
-	})
-}
-
-func (x *cmdListCaps) Execute(args []string) error {
-	cli := Client()
-	caps, err := cli.Capabilities()
-	if err != nil {
-		return err
+// UnmarshalFlag parses a string into an AttributePair
+func (ap *AttributePair) UnmarshalFlag(value string) error {
+	parts := strings.SplitN(value, "=", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid attribute: %q (want key=value)", value)
 	}
-	w := tabwriter.NewWriter(os.Stdout, 0, 4, 1, ' ', 0)
-	fmt.Fprintln(w, "Name\tLabel\tType")
-	for _, cap := range caps {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", cap.Name, cap.Label, cap.Type)
-	}
-	w.Flush()
+	ap.Key, ap.Value = parts[0], parts[1]
 	return nil
+}
+
+// AttributePairSliceToMap converts a slice of AttributePair into a map
+func AttributePairSliceToMap(attrs []AttributePair) map[string]string {
+	result := make(map[string]string)
+	for _, attr := range attrs {
+		result[attr.Key] = attr.Value
+	}
+	return result
 }
