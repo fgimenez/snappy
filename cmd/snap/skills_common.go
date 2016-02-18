@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 
 /*
- * Copyright (C) 2014-2015 Canonical Ltd
+ * Copyright (C) 2014-2016 Canonical Ltd
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -35,10 +35,13 @@ type AttributePair struct {
 // UnmarshalFlag parses a string into an AttributePair
 func (ap *AttributePair) UnmarshalFlag(value string) error {
 	parts := strings.SplitN(value, "=", 2)
-	if len(parts) != 2 {
+	if len(parts) < 2 || parts[0] == "" {
+		ap.Key = ""
+		ap.Value = ""
 		return fmt.Errorf("invalid attribute: %q (want key=value)", value)
 	}
-	ap.Key, ap.Value = parts[0], parts[1]
+	ap.Key = parts[0]
+	ap.Value = parts[1]
 	return nil
 }
 
@@ -49,4 +52,36 @@ func AttributePairSliceToMap(attrs []AttributePair) map[string]string {
 		result[attr.Key] = attr.Value
 	}
 	return result
+}
+
+// SnapAndName holds a snap name and a skill or slot name.
+type SnapAndName struct {
+	Snap string
+	Name string
+}
+
+// UnmarshalFlag unmarshals snap and skill or slot name.
+func (sn *SnapAndName) UnmarshalFlag(value string) error {
+	parts := strings.Split(value, ":")
+	sn.Snap = ""
+	sn.Name = ""
+	switch len(parts) {
+	case 1:
+		sn.Snap = parts[0]
+	case 2:
+		sn.Snap = parts[0]
+		sn.Name = parts[1]
+		// Reject ":name" (that is invalid)
+		if sn.Snap == "" {
+			sn.Name = ""
+		}
+		// Reject "snap:" (that should be spelled as "snap")
+		if sn.Name == "" {
+			sn.Snap = ""
+		}
+	}
+	if sn.Snap == "" && sn.Name == "" {
+		return fmt.Errorf("invalid value: %q (want snap:name or snap)", value)
+	}
+	return nil
 }

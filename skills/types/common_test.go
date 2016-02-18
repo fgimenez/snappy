@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 
 /*
- * Copyright (C) 2015 Canonical Ltd
+ * Copyright (C) 2016 Canonical Ltd
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -17,28 +17,17 @@
  *
  */
 
-package caps
+package types
 
 import (
-	"testing"
-
-	. "gopkg.in/check.v1"
+	"github.com/ubuntu-core/snappy/testutil"
 )
 
-func Test(t *testing.T) {
-	TestingT(t)
-}
-
-type CapabilitySuite struct{}
-
-var _ = Suite(&CapabilitySuite{})
-
-func (s *CapabilitySuite) TestString(c *C) {
-	cap := &Capability{
-		Name:     "test-name",
-		Label:    "test-label",
-		TypeName: "test-type",
-		Attrs:    nil,
-	}
-	c.Assert(cap.String(), Equals, "test-name")
+// MockEvalSymlinks replaces the path/filepath.EvalSymlinks function used inside the caps package.
+func MockEvalSymlinks(test *testutil.BaseTest, fn func(string) (string, error)) {
+	orig := evalSymlinks
+	evalSymlinks = fn
+	test.AddCleanup(func() {
+		evalSymlinks = orig
+	})
 }

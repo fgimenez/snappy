@@ -583,90 +583,6 @@ Notes: user facing implementations in text form must show this data using yaml.
 
 This is *not* a standard return type.
 
-## /2.0/capabilities
-
-### GET
-
-* Description: Get all of the capabilities that exist in the system
-* Authorization: authenticated
-* Operation: sync
-* Return: map of capabilities, see below.
-
-The result is a JSON object with a *capabilities* key; its value itself is a JSON
-object whose keys are capability names (e.g., "power-button") and whose values
-describe that capability.
-
-The method returns *all* capabilities. Regardless of their assignment to snaps.
-Note that capabilities are dynamic, they can be added and removed to the system
-and individual capabilities can change state over time.
-
-Each capability has the following attributes:
-
-name:
-	Name is a key that identifies the capability. It must be unique within its
-	context, which may be either a snap or a snappy runtime.
-
-label:
-	Label provides an optional title for the capability to help a human tell
-	which physical device this capability is referring to. It might say "Front
-	USB", or "Green Serial Port", for example.
-
-type:
-	Type defines the type of this capability. The capability type defines the
-	behavior allowed and expected from providers and consumers of that
-	capability, and also which information should be exchanged by these
-	parties.
-
-attrs:
-	Attrs are key-value pairs that provide type-specific capability details.
-	The attribute 'attrs' itself may not be present if there are no attributes
-	to mention.
-
-Sample result:
-
-```javascript
-{
-	"capabilities": {
-		"power-button": {
-			"resource": "/2.0/capabilities/power-button",
-			"name": "power-button",
-			"label": "Power Button",
-			"type": "evdev",
-			"attrs": {
-				"path": "/dev/input/event2"
-			},
-		}
-	}
-}
-```
-
-### POST
-
-* Description: Adds a new capability to the system
-* Authorization: authenticated
-* Operation: sync
-
-#### Sample input:
-
-```javascript
-{
-	"name": "my-capability",
-	"label": "My Capability",
-	"type": "my-type",
-	"attrs": {
-		"key": "value"
-	}
-}
-```
-
-## /1.0/capabilities/[name]
-
-### DELETE
-
-* Description: Remove a capability from the system
-* Access: trusted
-* Operation: sync
-
 ## /2.0/assertions
 
 ### POST
@@ -693,3 +609,50 @@ prerequisite in the database.
 The response is a stream of assertions separated by double newlines.
 The X-Ubuntu-Assertions-Count header is set to the number of
 returned assertions, 0 or more.
+
+## /2.0/skills
+
+### GET
+
+* Description: Get all the skills and information about where they are granted
+* Access: authenticated
+* Operation: sync
+* Return: array of skills containing array of slots using each skill.
+
+Sample result:
+
+```javascript
+[
+    {
+        “snap”:  "canonical-pi2",
+        “type”:  "bool-file",
+        “name”:  "pin-13",
+        “label”: "Pin 13",
+        “granted-to”: [
+            {"snap": "keyboard-lights", "name": "capslock-led"}
+        ]
+    }
+]
+```
+
+### POST
+
+* Description: Issue an action to the skill system
+* Access: authenticated
+* Operation: sync
+* Return: nothing
+
+Available actions are:
+
+- grant: grant the skill to the given skill slot.
+- revoke: revoke the given skill from the given skill slot.
+
+Sample input:
+
+```javascript
+{
+    “action”: “grant”,
+    “skill”:  {“snap”: “canonical-pi2”,   “name”: “pin-13”},
+    “slot”:   {“snap”: “keyboard-lights”, “name”: “capslock-led”}
+}
+```

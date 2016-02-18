@@ -17,25 +17,14 @@
  *
  */
 
-package caps
+package types
 
 import (
-	"errors"
+	"path/filepath"
 )
 
-// SecuritySystem is a name of a security system.
-type SecuritySystem string
+type evalSymlinksFn func(string) (string, error)
 
-const (
-	// SecurityApparmor identifies the apparmor security system.
-	SecurityApparmor SecuritySystem = "apparmor"
-	// SecuritySeccomp identifies the seccomp security system.
-	SecuritySeccomp SecuritySystem = "seccomp"
-	// SecurityDBus identifies the DBus security system.
-	SecurityDBus SecuritySystem = "dbus"
-)
-
-var (
-	// ErrUnknownSecurity is reported when an unknown security system is encountered.
-	ErrUnknownSecurity = errors.New("unknown security system")
-)
+// evalSymlinks is either filepath.EvalSymlinks or a mocked function for
+// applicable for testing.
+var evalSymlinks = filepath.EvalSymlinks
