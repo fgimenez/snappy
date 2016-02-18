@@ -111,7 +111,7 @@ func main() {
 		TestFilter:          *testFilter,
 		IntegrationTestName: build.IntegrationTestName,
 		ShellOnFail:         *shellOnFail,
-		Env:                 map[string]string{"http_proxy": *httpProxy},
+		Env:                 map[string]string{"http_proxy": *httpProxy, "https_proxy": *httpProxy},
 	}
 	if !remoteTestbed {
 		img := &image.Image{
