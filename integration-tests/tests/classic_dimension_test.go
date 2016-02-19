@@ -21,6 +21,8 @@
 package tests
 
 import (
+	"os"
+	
 	"github.com/ubuntu-core/snappy/integration-tests/testutils/cli"
 	"github.com/ubuntu-core/snappy/integration-tests/testutils/common"
 
@@ -51,6 +53,8 @@ func (s *classicDimensionSuite) destroyClassic(c *check.C) {
 }
 
 func (s *classicDimensionSuite) TestClassicShell(c *check.C) {
+	proxy := os.Getenv("https_proxy")
+	c.Assert(proxy, check.Equals, "http://squid.internal:3128")
 	s.enableClassic(c)
 	defer s.destroyClassic(c)
 
