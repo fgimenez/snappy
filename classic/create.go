@@ -29,6 +29,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ubuntu-core/snappy/arch"
 	"github.com/ubuntu-core/snappy/dirs"
@@ -74,7 +75,11 @@ func findDownloadPathFromLxdIndex(r io.Reader) (string, error) {
 }
 
 func findDownloadURL() (string, error) {
-	resp, err := http.Get(lxdBaseURL + lxdIndexPath)
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := client.Get(lxdBaseURL + lxdIndexPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to downlaod lxdIndexUrl: %v", err)
 	}
