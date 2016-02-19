@@ -74,6 +74,17 @@ func findDownloadPathFromLxdIndex(r io.Reader) (string, error) {
 }
 
 func findDownloadURL() (string, error) {
+	req, _ := http.NewRequest("GET", lxdBaseURL, nil)
+	urlProxy, err := http.ProxyFromEnvironment(req)
+	if urlProxy == nil && err == nil {
+		fmt.Println("https_proxy env var: ", os.Getenv("https_proxy"))
+		return "", fmt.Errorf("no proxy defined")
+	} else if err != nil {
+		return "", fmt.Errorf("error getting proxy: %v", err)
+	} else {
+		fmt.Println("Proxy host: ", urlProxy.Host)
+	}
+
 	resp, err := http.Get(lxdBaseURL + lxdIndexPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to downlaod lxdIndexUrl: %v", err)

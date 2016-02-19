@@ -22,7 +22,7 @@ package tests
 
 import (
 	"os"
-	
+
 	"github.com/ubuntu-core/snappy/integration-tests/testutils/cli"
 	"github.com/ubuntu-core/snappy/integration-tests/testutils/common"
 
@@ -36,7 +36,8 @@ type classicDimensionSuite struct {
 }
 
 func (s *classicDimensionSuite) enableClassic(c *check.C) {
-	output := cli.ExecCommand(c, "sudo", "snappy", "enable-classic")
+	proxy := os.Getenv("https_proxy")
+	output := cli.ExecCommand(c, "sudo", "env", "https_proxy="+proxy, "snappy", "enable-classic")
 
 	expected := "(?ms)" +
 		".*" +
