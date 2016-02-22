@@ -210,6 +210,7 @@ func getVersionFile() string {
 
 // InstallSnap executes the required command to install the specified snap
 func InstallSnap(c *check.C, packageName string) string {
+	cli.ExecCommand(c, "sync")
 	return cli.ExecCommand(c, "sudo", "snappy", "install", packageName, "--allow-unauthenticated")
 }
 
