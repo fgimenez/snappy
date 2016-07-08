@@ -1,0 +1,11 @@
+summary: restore POC
+
+restore: |
+    read text
+    if [ "$text" = "\n" ]; then
+        echo "you entered a return!"
+        exit 0
+    fi
+
+execute: |
+    echo "all the interesting stuff happens in the restore step"
