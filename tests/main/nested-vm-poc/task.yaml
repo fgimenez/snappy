@@ -1,0 +1,48 @@
+summary: nested virt
+
+environment:
+    SSH_PORT: 8022
+
+prepare: |
+    apt install -y qemu cloud-utils genisoimage sshpass
+    wget https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img -O disk.img.dist
+    cat > my-user-data <<EOF
+    #cloud-config
+    password: ubuntu
+    chpasswd: { expire: False }
+    ssh_pwauth: True
+    manage_etc_hosts: True
+    locale: en_US.UTF-8
+    EOF
+    qemu-img convert -O qcow2 disk.img.dist disk.img
+    cloud-localds my-seed.img my-user-data
+
+restore: |
+    apt remove -y qemu cloud-utils genisoimage
+    apt autoremove -y
+    rm -f my-user-data my-seed.img disk.img.orig disk.img
+
+execute: |
+    execute_remote_command(){
+        sshpass -p ubuntu ssh -p $SSH_PORT -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@localhost "$*"
+    }
+
+    wait_for_ssh(){
+        retry=30
+        while ! execute_remote_command true; do
+            retry=$(( retry - 1 ))
+            if [ $retry -le 0 ]; then
+                echo "Timed out waiting for ssh. Aborting!"
+                exit 1
+            fi
+            sleep 10
+        done
+    }
+
+    systemd-run --unit nested-vm $(which qemu-system-$(uname -m)) -m 512 -nographic -snapshot -net nic,model=virtio -net user,hostfwd=tcp::"$SSH_PORT"-:22 -hda $PWD/disk.img -hdb $PWD/my-seed.img
+
+    wait_for_ssh
+
+    execute_remote_command echo hello
+
+    systemctl stop nested-vm
