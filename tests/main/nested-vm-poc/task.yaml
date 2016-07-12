@@ -18,7 +18,7 @@ prepare: |
     cloud-localds my-seed.img my-user-data
 
 restore: |
-    apt remove -y qemu cloud-utils genisoimage
+    apt remove -y qemu cloud-utils genisoimage sshpass
     apt autoremove -y
     rm -f my-user-data my-seed.img disk.img.dist disk.img
 
