@@ -20,7 +20,7 @@ prepare: |
 restore: |
     apt remove -y qemu cloud-utils genisoimage
     apt autoremove -y
-    rm -f my-user-data my-seed.img disk.img.orig disk.img
+    rm -f my-user-data my-seed.img disk.img.dist disk.img
 
 execute: |
     execute_remote_command(){
