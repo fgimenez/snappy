@@ -1,0 +1,4 @@
+name: test-snapd-nonfree
+version: 1.0
+summary: Basic non free snap
+description: A basic buildable snap expected to be published as non free

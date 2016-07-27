@@ -1,0 +1,39 @@
+summary: Checks for cli errors of the buy command.
+
+details: |
+    Some of the tests require the test-snapd-nonfree snap to be published
+    in the production store as non-free.
+
+restore: |
+    rm -f nonexistent.error free.error
+    snap logout || true
+
+execute: |
+    echo "The buy command must fail with non existent snaps"
+    if snap buy this-snap-does-not-exist 2>nonexistent.error; then
+        echo "Expected buy error for unexistent snaps"
+        exit 1
+    fi
+    grep "cannot find snap" nonexistent.error
+
+    echo "=========================================="
+
+    echo "The buy command must fail with free snaps"
+    if snap buy test-snapd-tools 2>free.error; then
+        echo "Expected buy error for free snaps"
+        exit 1
+    fi
+    grep "snap is free" free.error
+
+    echo "=========================================="
+
+    echo "The buy command must fail with non logged users"
+    expect -f non_logged_user.exp
+
+    echo "=========================================="
+
+    if [ ! -z "$SPREAD_STORE_USER" ] && [ ! -z "$SPREAD_STORE_PASSWORD" ]; then
+        echo "The buy command must fail with logged users without payment details"
+        expect -f $TESTSLIB/successful_login.exp
+        expect -f no_payment_details.exp
+    fi

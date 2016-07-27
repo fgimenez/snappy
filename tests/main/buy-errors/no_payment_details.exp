@@ -1,0 +1,12 @@
+spawn snap buy test-snapd-nonfree
+
+expect "Do you want to buy \"test-snapd-nonfree\" from \"*\" for *? (Y/n):"
+send "\n"
+
+expect {
+    "error: invalid credentials" {
+        exit 0
+    } default {
+        exit 1
+    }
+}
