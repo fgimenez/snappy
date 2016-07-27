@@ -1,0 +1,12 @@
+spawn snap buy test-snapd-nonfree
+
+expect "Do you want to buy \"test-snapd-nonfree\" from \"canonical\" for *? (Y/n):"
+send "\n"
+
+expect {
+    "error: access denied (snap login --help)" {
+        exit 0
+    } default {
+        exit 1
+    }
+}
