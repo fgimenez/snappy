@@ -29,6 +29,7 @@ import (
 
 var implicitSlots = []string{
 	"firewall-control",
+	"fuse",
 	"home",
 	"hardware-observe",
 	"locale-control",

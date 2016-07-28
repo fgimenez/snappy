@@ -200,3 +200,10 @@ Can query hardware information from the system.
 
 Usage: reserved
 Auto-Connect: no
+
+### fuse
+
+Lets you run a fuse filesystem, accessing /dev/fuse and /sys/fs/fuse/connections.
+
+Usage: common
+Auto-Connect: yes
