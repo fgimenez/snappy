@@ -42,15 +42,6 @@ execute: |
 
     echo "==================================="
 
-    echo "When the plug is connected"
-    snap connect fuse-consumer:fuse ubuntu-core:fuse
-
-    echo "Then the snap is able to create a fuse filesystem"
-    sudo -i -u test /bin/sh -c "fuse-consumer.create $MOUNT_POINT"
-    grep -q "Hello World!" $MOUNT_POINT/hello
-
-    echo "==================================="
-
     echo "When the plug is disconnected"
     snap disconnect fuse-consumer:fuse ubuntu-core:fuse
 
@@ -60,3 +51,12 @@ execute: |
         exit 1
     fi
     grep -q "Permission denied" fuse.error
+
+    echo "==================================="
+
+    echo "When the plug is connected"
+    snap connect fuse-consumer:fuse ubuntu-core:fuse
+
+    echo "Then the snap is able to create a fuse filesystem"
+    sudo -i -u test /bin/sh -c "fuse-consumer.create $MOUNT_POINT"
+    grep -q "Hello World!" $MOUNT_POINT/hello
