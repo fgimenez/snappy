@@ -12,26 +12,19 @@ details: |
     name and content in the mount point given to the command.
 
 environment:
-    BUILD_DIR: $(mktemp -d)
     MOUNT_POINT: /var/snap/fuse-consumer/current/mount_point
 
 prepare: |
     echo "Given a snap declaring a fuse plug is installed"
-    mkdir -p $BUILD_DIR
-    apt install -y snapcraft
-    cp -ar $TESTSLIB/snaps/fuse-consumer/* $BUILD_DIR
-    cd $BUILD_DIR && snapcraft
-    snap install fuse-consumer_1.0_$(dpkg-architecture -q DEB_HOST_ARCH).snap
+    snap install test-snapd-fuse-consumer
 
     echo "And a user writable mount point is created"
     mkdir -p $MOUNT_POINT
     chown test:test $MOUNT_POINT
 
 restore: |
-    apt remove -y snapcraft
-    apt autoremove -y
     umount $MOUNT_POINT
-    rm -rf $BUILD_DIR $MOUNT_POINT fuse.error
+    rm -rf $MOUNT_POINT fuse.error
 
 execute: |
     CONNECTED_PATTERN=":fuse +fuse-consumer"
