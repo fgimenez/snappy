@@ -1,4 +1,4 @@
-name: fuse-consumer
+name: test-snapd-fuse-consumer
 version: 1.0
 summary: Basic fuse consumer snap
 description: A basic snap declaring a plug on fuse
