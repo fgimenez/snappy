@@ -1,0 +1,62 @@
+summary: Ensure that the fuse interface works.
+
+details: |
+    The fuse interface allows a snap to manage FUSE file systems.
+
+    A snap which defines the fuse plug must be shown in the interfaces list.
+    The plug must be autoconnected on install and, as usual, must be able to be
+    reconnected.
+
+    A snap declaring a plug on this interface must be able to create a fuse filesystem
+    in a writable zone. The fuse-consumer test snap creates a readable file with a known
+    name and content in the mount point given to the command.
+
+environment:
+    BUILD_DIR: $(mktemp -d)
+    MOUNT_POINT: /var/snap/fuse-consumer/current/mount_point
+
+prepare: |
+    echo "Given a snap declaring a fuse plug is installed"
+    mkdir -p $BUILD_DIR
+    apt install -y snapcraft
+    cp -ar $TESTSLIB/snaps/fuse-consumer/* $BUILD_DIR
+    cd $BUILD_DIR && snapcraft
+    snap install fuse-consumer_1.0_$(dpkg-architecture -q DEB_HOST_ARCH).snap
+
+    echo "And a user writable mount point is created"
+    mkdir -p $MOUNT_POINT
+    chown test:test $MOUNT_POINT
+
+restore: |
+    apt remove -y snapcraft
+    apt autoremove -y
+    umount $MOUNT_POINT
+    rm -rf $BUILD_DIR $MOUNT_POINT fuse.error
+
+execute: |
+    CONNECTED_PATTERN=":fuse +fuse-consumer"
+    DISCONNECTED_PATTERN="(?s).*?\n- +fuse-consumer:fuse"
+
+    echo "Then the fuse plug is connected by default"
+    snap interfaces | grep -Pzq "$CONNECTED_PATTERN"
+
+    echo "==================================="
+
+    echo "When the plug is disconnected"
+    snap disconnect fuse-consumer:fuse ubuntu-core:fuse
+
+    echo "Then the snap is not able to create a fuse file system"
+    if sudo -i -u test /bin/sh -c "fuse-consumer $MOUNT_POINT 2>${PWD}/fuse.error"; then
+        echo "Expected permission error creating fuse filesystem with disconnected plug"
+        exit 1
+    fi
+    grep -q "Permission denied" fuse.error
+
+    echo "==================================="
+
+    echo "When the plug is connected"
+    snap connect fuse-consumer:fuse ubuntu-core:fuse
+
+    echo "Then the snap is able to create a fuse filesystem"
+    sudo -i -u test /bin/sh -c "fuse-consumer.create $MOUNT_POINT"
+    grep -q "Hello World!" $MOUNT_POINT/hello
