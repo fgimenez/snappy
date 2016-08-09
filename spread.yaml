@@ -70,6 +70,14 @@ suites:
         summary: Full-system tests for snapd
         prepare: |
             apt install -y ${SPREAD_PATH}/../snapd_*.deb
+
+            #enable proposed
+            echo "deb http://archive.ubuntu.com/ubuntu/ xenial-proposed restricted main multiverse universe" | tee -a /etc/apt/sources.list
+            apt update
+
+            # install snap-confine from proposed
+            apt install snap-confine
+
             # Snapshot the state including core.
             if [ ! -f $SPREAD_PATH/snapd-state.tar.gz ]; then
                 ! snap list | grep core || exit 1
