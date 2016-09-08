@@ -32,19 +32,16 @@ backends:
                 image: ubuntu-16.04-64
                 username: ubuntu
                 password: ubuntu
+
     adhoc:
         allocate: |
-            echo "Allocating ad-hoc $SPREAD_SYSTEM"
-            if [ -z "$ADT_ARTIFACTS" ]; then
-                echo "out adhoc only works inside autopkgtest"
-                exit 1
-            fi
-            echo "localhost:22"
+            echo "Allocating $SPREAD_SYSTEM..."
+            ADDRESS localhost:8023
         discard: |
             echo "Discarding ad-hoc $SPREAD_SYSTEM"
         systems:
-            - ubuntu-16.04-64:
-                username: ubuntu
+            - ubuntu-core-16-64:
+                username: fgimenez
                 password: ubuntu
 
 path: /home/gopath/src/github.com/snapcore/snapd
@@ -55,6 +52,9 @@ exclude:
 prepare: |
     # this indicates that the server got reused, nothing to setup
     [ "$REUSE_PROJECT" != 1 ] || exit 0
+
+    # adhoc backend and ubuntu-core system, nothing to setup
+    [ "$SPREAD_BACKEND" = adhoc -a "$SPREAD_SYSTEM" = ubuntu-core-16-64 ] && exit 0
 
     # apt update is hanging on security.ubuntu.com with IPv6.
     sysctl -w net.ipv6.conf.all.disable_ipv6=1
