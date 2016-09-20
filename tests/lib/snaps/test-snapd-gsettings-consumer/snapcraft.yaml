@@ -6,13 +6,17 @@ description: A basic snap declaring a plug on gsettings
 apps:
     get:
         command: bin/get
-        plugs: [gsettings]
+        plugs: [gsettings, home]
     set:
         command: bin/set
-        plugs: [gsettings]
+        plugs: [gsettings, home]
 
 parts:
     gsettings:
         plugin: make
         source: .
-        stage-packages: [libglib2.0-bin]
+        after: [desktop/glib-only]
+        stage-packages: [libglib2.0-bin, gsettings-ubuntu-schemas, usermetricsservice]
+        snap:
+            - bin/*
+            - usr/share/glib-2.0/*

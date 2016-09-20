@@ -4,4 +4,10 @@ schema="$1"
 key="$2"
 value="$3"
 
-gsettings set "$schema" "$key" "$value"
+export XDG_DATA_HOME=$SNAP/usr/share
+# Font Config
+export FONTCONFIG_PATH=$SNAP/etc/fonts/config.d
+export FONTCONFIG_FILE=$SNAP/etc/fonts/fonts.conf
+export HOME=$SNAP_USER_DATA
+
+desktop-launch gsettings set "$schema" "$key" "$value"
