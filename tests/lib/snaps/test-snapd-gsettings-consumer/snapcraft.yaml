@@ -16,7 +16,7 @@ parts:
         plugin: make
         source: .
         after: [desktop/glib-only]
-        stage-packages: [libglib2.0-bin, gsettings-ubuntu-schemas, usermetricsservice]
+        stage-packages: [libglib2.0-bin, gsettings-ubuntu-schemas, usermetricsservice, dconf-gsettings-backend]
         snap:
             - bin/*
             - usr/share/glib-2.0/*
