@@ -10,7 +10,9 @@ bootenv() {
         if command -v grub-editenv >/dev/null; then
             grub-editenv list | grep "^$1"
         else
-            fw_printenv "$1"
+            if [ $(fw_printenv > fw_printenv.out) ] &&  [ $(grep -Pq "^$1" fw_printenv.out) ]; then
+                fw_printenv "$1"
+            fi
         fi | sed "s/^${1}=//"
     fi
 }
