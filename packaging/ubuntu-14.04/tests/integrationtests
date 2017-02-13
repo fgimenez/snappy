@@ -3,7 +3,7 @@
 set -ex
 
 # required for the debian adt host
-mkdir -p /etc/systemd/system/snapd.service.d/ 
+mkdir -p /etc/systemd/system/snapd.service.d/
 if [ "$http_proxy" != "" ]; then
     cat <<EOF | tee /etc/systemd/system/snapd.service.d/proxy.conf
 [Service]
@@ -22,6 +22,12 @@ echo ubuntu:ubuntu|chpasswd
 sed -i 's/\(PermitRootLogin\|PasswordAuthentication\)\>.*/\1 yes/' /etc/ssh/sshd_config
 
 service ssh restart
+
+# If snapd's package has a release version (not built from git) then install core from candidate in the tests.
+# This is intended to cope with the autopkgtest execution using the package from -proposed
+if [ -z "$(apt list snapd | grep git)" ]; then
+    export SPREAD_CORE_CHANNEL=candidate
+fi
 
 # and now run spread against localhost
 . /etc/os-release
