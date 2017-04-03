@@ -1,7 +1,7 @@
 summary: Ensure that the security rules for private tmp are in place.
 
 # ppc64el disabled because of https://bugs.launchpad.net/snappy/+bug/1655594
-systems: [-ubuntu-core-16-*, -ubuntu-*-ppc64el]
+systems: [-ubuntu-*-ppc64el]
 
 environment:
     SNAP_INSTALL_DIR: $(pwd)/snap-install-dir
@@ -17,6 +17,8 @@ prepare: |
     sed -i 's/test-snapd-tools/not-test-snapd-tools/g' $SNAP_INSTALL_DIR/meta/snap.yaml
     snapbuild $SNAP_INSTALL_DIR .
     snap install --dangerous not-test-snapd-tools_1.0_all.snap
+
+    snap install --devmode expect
 
 restore: |
     rm -rf not-test-snapd-tools_1.0_all.snap \

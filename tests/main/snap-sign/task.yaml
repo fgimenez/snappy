@@ -5,6 +5,7 @@ systems: [-ubuntu-core-16-*, -ubuntu-*-ppc64el]
 
 prepare: |
     . "$TESTSLIB/mkpinentry.sh"
+    snap install --devmode expect
 
 execute: |
     echo "Creating a new key without a password"
