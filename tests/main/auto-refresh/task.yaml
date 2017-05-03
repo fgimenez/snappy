@@ -9,6 +9,9 @@ restore: |
         snap set core refresh.disabled=true
     fi
 
+debug: |
+    snap changes
+
 execute: |
     echo "Install a snap from stable"
     snap install test-snapd-tools
