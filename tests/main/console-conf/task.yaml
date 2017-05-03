@@ -1,6 +1,14 @@
 summary: console-conf
 
 execute: |
+    mkdir -p /home/test/.ssh
+    rm -f /home/test/.ssh/*
+    ssh-keygen -t rsa -f /home/test/.ssh/id_rsa
+    cat /home/test/.ssh/id_rsa.pub > /home/test/.ssh/authorized_keys
+    chmod -R 700 /home/test/.ssh
+    chmod 600 /home/test/.ssh/authorized_keys
+    chown -R test.test /home/test/.ssh
+
     snap install --edge --devmode expect
 
-    expect -d -f ${PWD}/console-conf.exp
+    ssh -v -i /home/test/.ssh/id_rsa -t -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no test@localhost /snap/bin/expect -d -f ${PWD}/console-conf.exp
