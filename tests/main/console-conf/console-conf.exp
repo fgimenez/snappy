@@ -5,29 +5,34 @@
 #puts [list array set ::env [array get ::env]]
 exp_internal 1
 
-spawn /usr/bin/ssh -t -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no test@localhost
+set stty_init raw
+spawn -console /usr/bin/ssh -t -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no test@localhost
 
 expect {
     "*password:" {
-        send "ubuntu\n"
+        send -i $spawn_id "ubuntu\n"
+        exp_continue
+    } timeout {
+        exit 1
+    } "*$ "
+}
 
-        expect {
-            "*$ " {
-                #stty -isig -icanon -exten -ixon -ixoff
-                #exec /bin/stty -isig -icanon -exten -ixon -ixoff <@stdin
-                send "sudo /usr/bin/console-conf\n"
+#exec /bin/stty -isig -icanon -exten -ixon -ixoff </dev/tty
 
-                expect {
-                    "Ubuntu Core" {
-                        exit 0
-                    } timeout {
-                        exit 1
-                    }
-                }
-            } timeout {
-                exit 1
-            }
-        }
+#send -i $spawn_id "stty -isig -icanon -exten -ixon -ixoff\n"
+send -i $spawn_id "stty raw\n"
+expect {
+    timeout {
+        exit 1
+    } "*$ "
+}
+
+match_max -i $spawn_id 50000
+set timeout 60
+send -i $spawn_id "script --return -c 'sudo /usr/bin/console-conf' /dev/null\n"
+expect {
+    "Ubuntu Core" {
+        exit 0
     } timeout {
         exit 1
     }
