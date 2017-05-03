@@ -1,0 +1,6 @@
+summary: console-conf
+
+execute: |
+    snap install --edge --devmode expect
+
+    expect -d -f ${PWD}/console-conf.exp

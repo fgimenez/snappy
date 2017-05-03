@@ -1,0 +1,34 @@
+#set timeout 60
+#match_max 5000
+#set expect_out(buffer) {}
+#unset -nocomplain ::env(SSH_AUTH_SOCK)   ;# This one is session-bound anyway
+#puts [list array set ::env [array get ::env]]
+exp_internal 1
+
+spawn /usr/bin/ssh -t -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no test@localhost
+
+expect {
+    "*password:" {
+        send "ubuntu\n"
+
+        expect {
+            "*$ " {
+                #stty -isig -icanon -exten -ixon -ixoff
+                #exec /bin/stty -isig -icanon -exten -ixon -ixoff <@stdin
+                send "sudo /usr/bin/console-conf\n"
+
+                expect {
+                    "Ubuntu Core" {
+                        exit 0
+                    } timeout {
+                        exit 1
+                    }
+                }
+            } timeout {
+                exit 1
+            }
+        }
+    } timeout {
+        exit 1
+    }
+}
