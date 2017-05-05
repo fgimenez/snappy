@@ -1,14 +1,7 @@
 spawn sudo /usr/bin/console-conf
 
 expect {
-    timeout {
-        exit 1
-    } "*password:"
-}
-
-send -i $spawn_id "ubuntu\n"
-expect {
-    "Ubuntu Corerttrt" {
+    "Ubuntu Coresdfsf" {
         exit 0
     } timeout {
         exit 1
