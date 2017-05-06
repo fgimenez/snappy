@@ -1,6 +1,5 @@
 summary: console-conf
 execute: |
-    snap install --edge --devmode expect
-    snap install rawpty
+    snap install --devmode expect
 
-    rawpty "/snap/bin/expect -d -f ${PWD}/console-conf.exp"
+    expect -f console-conf.exp
