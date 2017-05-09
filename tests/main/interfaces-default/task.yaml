@@ -1,0 +1,10 @@
+summary: checks for default interface rules
+
+prepare: |
+    . $TESTSLIB/snaps.sh
+    install_local test-snapd-tools
+
+execute: |
+    echo "Any snap is allowed to use systemd-cat"
+    su -l -c "test-snapd-tools.cmd /usr/bin/systemd-cat echo hello world!" test
+    journalctl --no-pager | MATCH ".*test-snapd-tools.*hello world!"
