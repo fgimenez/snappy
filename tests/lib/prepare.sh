@@ -109,7 +109,7 @@ prepare_classic() {
         echo "Package build incorrect, 'snap-confine --version' mentions 'unknown'"
         "$LIBEXECDIR/snapd/snap-confine" --version
         case "$SPREAD_SYSTEM" in
-            ubuntu-*|debian-*)
+            ubuntu-*|debian-*|raspbian-*)
                 apt-cache policy snapd
                 ;;
             fedora-*)
@@ -120,11 +120,12 @@ prepare_classic() {
     fi
 
     START_LIMIT_INTERVAL="StartLimitInterval=0"
-    if [[ "$SPREAD_SYSTEM" = opensuse-42.2-* ]]; then
-        # StartLimitInterval is not supported by the systemd version
-        # openSUSE 42.2 ships.
-        START_LIMIT_INTERVAL=""
-    fi
+    case "$SPREAD_SYSTEM" in
+        opensuse-42.2-*|raspbian-8-*)
+            # StartLimitInterval is not supported by the systemd version
+            # openSUSE 42.2 / Raspbian ship
+            START_LIMIT_INTERVAL=""
+    esac
 
     mkdir -p /etc/systemd/system/snapd.service.d
     cat <<EOF > /etc/systemd/system/snapd.service.d/local.conf
@@ -152,11 +153,16 @@ EOF
 
     # Snapshot the state including core.
     if [ ! -f "$SPREAD_PATH/snapd-state.tar.gz" ]; then
-        ! snap list | grep core || exit 1
-        # use parameterized core channel (defaults to edge) instead
-        # of a fixed one and close to stable in order to detect defects
-        # earlier
-        snap install --"$CORE_CHANNEL" core
+        if snap list | grep core ; then
+            # If core is already installed we ensure it's the lastest from
+            # the configured channel.
+            snap refresh --"$CORE_CHANNEL" core
+        else
+            # use parameterized core channel (defaults to edge) instead
+            # of a fixed one and close to stable in order to detect defects
+            # earlier
+            snap install --"$CORE_CHANNEL" core
+        fi
         snap list | grep core
 
         systemctl stop snapd.{service,socket}
@@ -173,6 +179,11 @@ EOF
         case "$SPREAD_SYSTEM" in
             fedora-*|opensuse-*)
                 GRUB_EDITENV=grub2-editenv
+                ;;
+            raspbian-*)
+                # There is no grub-editenv on raspbian and no package seems to
+                # provide it so we set a command here which will never fail.
+                GRUB_EDITENV=/bin/true
                 ;;
         esac
 
@@ -206,31 +217,39 @@ EOF
         systemctl start snapd.socket
     fi
 
-    if [[ "$SPREAD_SYSTEM" == debian-* || "$SPREAD_SYSTEM" == ubuntu-* ]]; then
-        if [[ "$SPREAD_SYSTEM" == ubuntu-* ]]; then
-            quiet apt install -y -q pollinate
-            pollinate
-        fi
+    case "$SPREAD_SYSTEM" in
+        ubuntu-*|debian-*|raspbian-*)
+            if [[ "$SPREAD_SYSTEM" == ubuntu-* ]]; then
+                quiet apt install -y -q pollinate
+                pollinate
+            fi
 
-        # Improve entropy for the whole system quite a lot to get fast
-        # key generation during our test cycles
-        apt-get install -y -q rng-tools
-        echo "HRNGDEVICE=/dev/urandom" > /etc/default/rng-tools
-        /etc/init.d/rng-tools restart
+            HWRNGDEVICE=/dev/urandom
+            if [[ "$SPREAD_SYSTEM" == raspbian-* ]]; then
+                # On Raspberry Pi devices we have a real hardware random number
+                # generator available.
+                HWRNGDEVICE=/dev/hwrng
+            fi
 
-        if systemctl list-units | MATCH "rng-tools.service"; then
-            mkdir -p /etc/systemd/system/rng-tools.service.d/
-            cat <<EOF > /etc/systemd/system/rng-tools.service.d/local.conf
+            # Improve entropy for the whole system quite a lot to get fast
+            # key generation during our test cycles
+            apt-get install -y -q rng-tools
+            echo "HRNGDEVICE=/dev/urandom" > /etc/default/rng-tools
+            /etc/init.d/rng-tools restart
+
+            if systemctl list-units | MATCH "rng-tools.service"; then
+                mkdir -p /etc/systemd/system/rng-tools.service.d/
+                cat <<EOF > /etc/systemd/system/rng-tools.service.d/local.conf
 [Service]
 Restart=always
 RestartSec=2
 RemainAfterExit=no
 PIDFile=/var/run/rngd.pid
 EOF
-        systemctl daemon-reload
-        systemctl restart rng-tools.service
-        fi
-    fi
+                systemctl daemon-reload
+                systemctl restart rng-tools.service
+            fi
+    esac
 
     disable_kernel_rate_limiting
 }

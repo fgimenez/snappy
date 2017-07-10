@@ -195,6 +195,12 @@ backends:
             - ubuntu-core-16-arm-32:
                 username: test
                 password: ubuntu
+            - raspbian-8-arm-32:
+                username: test
+                password: ubuntu
+                # Give system a bit more time to finish things as it's
+                # quite slow at times
+                kill-timeout: 40m
 
     linode-sru:
         type: linode
@@ -230,24 +236,27 @@ exclude:
 
 prepare-each: |
     # systemd on 14.04 does not know about --rotate or --vacuum-time.
-    if [[ "$SPREAD_SYSTEM" != ubuntu-14.04-* ]]; then
-        journalctl --rotate
-        sleep .1
-        journalctl --vacuum-time=1ms
-    else
-        # Force a log rotation with small size
-        sed -i.bak s/#SystemMaxUse=/SystemMaxUse=1K/g /etc/systemd/journald.conf
-        systemctl kill --kill-who=main --signal=SIGUSR2 systemd-journald.service
+    case "$SPREAD_SYSTEM" in
+        ubuntu-14.04-*|raspbian-*)
+            # Force a log rotation with small size
+            sed -i.bak s/#SystemMaxUse=/SystemMaxUse=1K/g /etc/systemd/journald.conf
+            systemctl kill --kill-who=main --signal=SIGUSR2 systemd-journald.service
 
-        # Restore the initial configuration and rotate logs
-        mv /etc/systemd/journald.conf.bak /etc/systemd/journald.conf
-        systemctl kill --kill-who=main --signal=SIGUSR2 systemd-journald.service
+            # Restore the initial configuration and rotate logs
+            mv /etc/systemd/journald.conf.bak /etc/systemd/journald.conf
+            systemctl kill --kill-who=main --signal=SIGUSR2 systemd-journald.service
 
-        # Remove rotated journal logs
-        systemctl stop systemd-journald.service
-        find /run/log/journal/ -name "*@*.journal" -delete
-        systemctl start systemd-journald.service
-    fi
+            # Remove rotated journal logs
+            systemctl stop systemd-journald.service
+            find /run/log/journal/ -name "*@*.journal" -delete
+            systemctl start systemd-journald.service
+            ;;
+        *)
+            journalctl --rotate
+            sleep .1
+            journalctl --vacuum-time=1ms
+            ;;
+    esac
     dmesg -c > /dev/null
 
 debug-each: |
@@ -311,7 +320,7 @@ prepare: |
         # NOTE: We can't use tests/lib/pkgdb.sh here as it doesn't exist at
         # this time when none of the test files is yet in place.
         case "$SPREAD_SYSTEM" in
-            ubuntu-*|debian-*)
+            ubuntu-*|debian-*|raspbian-*)
                 apt-get update >& "$tf" || ( cat "$tf"; exit 1 )
                 apt-get install -y xdelta3 curl >& "$tf" || ( cat "$tf"; exit 1 )
                 ;;
@@ -337,7 +346,10 @@ restore: |
     if [ "$SPREAD_BACKEND" = external ]; then
         # start and enable autorefresh
         if [ -e /snap/core/current/meta/hooks/configure ]; then
-            systemctl enable --now snapd.refresh.timer
+            # Can't use --now here as not all systems we target
+            # have support for it (e.g. Raspbian 8 with systemd 215)
+            systemctl enable snapd.refresh.timer
+            systemctl start snapd.refresh.timer
             snap set core refresh.disabled=false
         fi
     fi
@@ -449,7 +461,8 @@ suites:
                 exit 0
             fi
             $TESTSLIB/reset.sh
-            apt-get purge -y snapd
+            . "$TESTSLIB/pkgdb.sh"
+            distro_purge_package snapd
 
     tests/unit/:
         summary: Suite to run unit tests (non-go and different go runtimes)
@@ -477,7 +490,8 @@ suites:
             prepare_each_classic
         restore: |
             $TESTSLIB/reset.sh --store
-            apt-get purge -y snapd snap-confine ubuntu-core-launcher
+            . "$TESTSLIB/pkgdb.sh"
+            distro_purge_package snapd snap-confine ubuntu-core-launcher
 
     tests/nightly/:
         summary: Suite for nightly, expensive, tests
@@ -498,7 +512,8 @@ suites:
         restore: |
             $TESTSLIB/reset.sh
             if [[ "$SPREAD_SYSTEM" != ubuntu-core-16-* ]]; then
-                apt-get purge -y snapd
+                . "$TESTSLIB/pkgdb.sh"
+                distro_purge_package snapd
             fi
 
     tests/nested/:
