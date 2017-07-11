@@ -98,7 +98,10 @@ EOF
 }
 
 prepare_classic() {
-    distro_install_build_snapd
+    # raspbian is external and classic, at this point snapd has been already installed from the archive
+    if [[ "$SPREAD_SYSTEM" != raspbian-* ]]; then
+        distro_install_build_snapd
+    fi
     if snap --version |MATCH unknown; then
         echo "Package build incorrect, 'snap --version' mentions 'unknown'"
         snap --version

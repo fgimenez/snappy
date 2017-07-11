@@ -10,6 +10,11 @@ execute_remote(){
     ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p "$INSTANCE_PORT" "$USER@$INSTANCE_IP" "$@"
 }
 
-execute_remote "sudo adduser --extrausers --quiet --disabled-password --gecos '' test"
+EXTRA_USERS=
+if execute_remote "uname -a" | grep -v "Linux raspberrypi"; then
+    EXTRA_USERS="--extrausers"
+fi
+
+execute_remote "sudo adduser $EXTRA_USERS --quiet --disabled-password --gecos '' test"
 execute_remote "echo test:ubuntu | sudo chpasswd"
 execute_remote "echo 'test ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/create-user-test"

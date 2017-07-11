@@ -135,6 +135,24 @@ install_dependencies_from_published(){
     done
 }
 
+build_utilities(){
+    # Build snapbuild.
+    go get ./tests/lib/snapbuild
+    # Build fakestore.
+
+    fakestore_tags=
+    if [ "$REMOTE_STORE" = staging ]; then
+        fakestore_tags="-tags withstagingkeys"
+    fi
+
+    # eval to prevent expansion errors on opensuse (the variable keeps quotes)
+    eval "go get $fakestore_tags ./tests/lib/fakestore/cmd/fakestore"
+
+    # Build additional utilities we need for testing
+    go get ./tests/lib/fakedevicesvc
+    go get ./tests/lib/systemd-escape
+}
+
 # Set REUSE_PROJECT to reuse the previous prepare when also reusing the server.
 [ "$REUSE_PROJECT" != 1 ] || exit 0
 echo "Running with SNAP_REEXEC: $SNAP_REEXEC"
@@ -154,6 +172,21 @@ fi
 . "$TESTSLIB/dirs.sh"
 
 if [ "$SPREAD_BACKEND" = external ]; then
+   if [[ "$SPREAD_SYSTEM" == raspbian-* ]]; then
+       cat <<EOF >> /etc/apt/sources.list
+deb http://ppa.launchpad.net/snappy-dev/edge/ubuntu xenial main
+deb http://ports.ubuntu.com/ubuntu-ports/ xenial main restricted universe multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ xenial-updates main restricted universe multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ xenial-security main restricted universe multiverse
+EOF
+       # add keys for ppa.launchpad.net and ports.ubuntu.com
+       apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F1831DDAFC42E99D 40976EAF437D05B5 3B4FE6ACC0B21F32
+       apt-get update
+       apt-get install -y --no-install-recommends snapd expect golang-go
+
+       build_utilities
+   fi
+
    # build test binaries
    if [ ! -f "$GOHOME/bin/snapbuild" ]; then
        mkdir -p "$GOHOME/bin"
@@ -249,18 +282,4 @@ else
     install_dependencies_from_published "$SNAPD_PUBLISHED_VERSION"
 fi
 
-# Build snapbuild.
-go get ./tests/lib/snapbuild
-# Build fakestore.
-
-fakestore_tags=
-if [ "$REMOTE_STORE" = staging ]; then
-    fakestore_tags="-tags withstagingkeys"
-fi
-
-# eval to prevent expansion errors on opensuse (the variable keeps quotes)
-eval "go get $fakestore_tags ./tests/lib/fakestore/cmd/fakestore"
-
-# Build additional utilities we need for testing
-go get ./tests/lib/fakedevicesvc
-go get ./tests/lib/systemd-escape
+build_utilities
